@@ -16,7 +16,7 @@
             "request": "launch",
             "mainClass": "io.github.qurben.App",
             "projectName": "adyen-java-cli",
-            "args": ["-t", "test"]
+            "args": ["company:apicredential:list"]
         }
     ]
 }

@@ -1,14 +1,14 @@
 package io.github.qurben;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 
 import com.adyen.Client;
 import com.adyen.enums.Environment;
-import com.adyen.model.management.ApiCredential;
-import com.adyen.model.management.ListMerchantApiCredentialsResponse;
 import com.adyen.service.exception.ApiException;
-import com.adyen.service.management.ApiCredentialsMerchantLevel;
-
+import io.github.qurben.action.ActionHandler;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -21,14 +21,11 @@ import net.sourceforge.argparse4j.inf.Namespace;
 public class App {
     public static void main(String[] args) throws ApiException, IOException {
 
-        ArgumentParser parser = ArgumentParsers.newFor("Checksum").build()
+        ArgumentParser parser = ArgumentParsers.newFor("adyen-cli").build()
                 .defaultHelp(true)
                 .description("Calculate checksum of given files.");
-        parser.addArgument("-t", "--type")
-                .choices("SHA-256", "SHA-512", "SHA1").setDefault("SHA-256")
-                .help("Specify hash function to use");
-        parser.addArgument("file").nargs("*")
-                .help("File to calculate checksum");
+        parser.addArgument("action")
+                .help("Action to execute");
         Namespace ns = null;
         try {
             ns = parser.parseArgs(args);
@@ -37,16 +34,32 @@ public class App {
             System.exit(1);
         }
         
-        System.out.println("Hello World!");
+        System.exit(new App().run(ns));
+    }
+
+    public int run(Namespace ns) throws ApiException, IOException {
+        String action = ns.getString("action");
+
+        System.out.println("Hello World!" + action);
+
+        Map<String, ActionHandler> handlerMap = getHandlers();
+
+        if (!handlerMap.containsKey(action)) {
+            System.out.println("Cannot find action: " + action);
+            System.exit(1);
+            return 1;
+        }
 
         Client client = new Client(System.getenv("ADYEN_MANAGEMENT_API_KEY"), Environment.TEST);
+        
+        handlerMap.get(action).execute(client);
 
-        ApiCredentialsMerchantLevel apiCredentialsMerchantLevel = new ApiCredentialsMerchantLevel(client);
+        return 0;
+    }
 
-        ListMerchantApiCredentialsResponse apiCredentials = apiCredentialsMerchantLevel.listApiCredentials("AdyenDevExECOM", null);
+    public Map<String, ActionHandler> getHandlers() {
+        ServiceLoader<ActionHandler> handlers = ServiceLoader.load(ActionHandler.class);
 
-        for (ApiCredential apiCredential : apiCredentials.getData()) {
-            System.out.println(apiCredential.getDescription());
-        }
+        return handlers.stream().map(e -> e.get()).collect(Collectors.toMap(e -> e.getName(), e -> e));
     }
 }
