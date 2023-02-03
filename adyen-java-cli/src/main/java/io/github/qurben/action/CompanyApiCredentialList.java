@@ -9,8 +9,16 @@ import com.adyen.service.exception.ApiException;
 import com.adyen.service.management.ApiCredentialsMerchantLevel;
 import com.google.auto.service.AutoService;
 
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+
 @AutoService(ActionHandler.class)
 public class CompanyApiCredentialList implements ActionHandler {
+
+    @Override
+    public void configure(ArgumentParser argumentParser) {
+        argumentParser.addArgument("company:apicredential:list").nargs("?");
+    }
 
     @Override
     public String getName() {
@@ -18,10 +26,16 @@ public class CompanyApiCredentialList implements ActionHandler {
     }
 
     @Override
-    public String execute(Client client, String... args) throws ApiException, IOException {
-        ApiCredentialsMerchantLevel apiCredentialsMerchantLevel = new ApiCredentialsMerchantLevel(client);
+    public String getHelp() {
+        return "List company api credentials";
+    }
 
-        ListMerchantApiCredentialsResponse apiCredentials = apiCredentialsMerchantLevel.listApiCredentials("AdyenDevExECOM", null);
+    @Override
+    public String execute(Client client, String[] args) throws ApiException, IOException {
+        ApiCredentialsCompanyLevel apiCredentialsMerchantLevel = new ApiCredentialsCompanyLevel(client);
+
+        ListMerchantApiCredentialsResponse apiCredentials = apiCredentialsMerchantLevel
+                .listApiCredentials(args[1], null);
 
         for (ApiCredential apiCredential : apiCredentials.getData()) {
             System.out.println(apiCredential.getDescription());
@@ -29,5 +43,5 @@ public class CompanyApiCredentialList implements ActionHandler {
 
         return "";
     }
-    
+
 }

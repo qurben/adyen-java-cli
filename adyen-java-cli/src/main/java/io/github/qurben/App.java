@@ -20,29 +20,35 @@ import net.sourceforge.argparse4j.inf.Namespace;
  */
 public class App {
     public static void main(String[] args) throws ApiException, IOException {
+        System.exit(new App().run(args));
+    }
+
+    public int run(String[] args) throws ApiException, IOException {
+        Map<String, ActionHandler> handlerMap = getHandlers();
 
         ArgumentParser parser = ArgumentParsers.newFor("adyen-cli").build()
                 .defaultHelp(true)
                 .description("Calculate checksum of given files.");
-        parser.addArgument("action")
-                .help("Action to execute");
+
+                parser.addArgument("action");
+                
+
+                // for (ActionHandler action : handlerMap.values()) {
+                //     action.configure(parser);
+                // }
+
         Namespace ns = null;
         try {
             ns = parser.parseArgs(args);
         } catch (ArgumentParserException e) {
             parser.handleError(e);
-            System.exit(1);
+            return 1;
         }
-        
-        System.exit(new App().run(ns));
-    }
 
-    public int run(Namespace ns) throws ApiException, IOException {
         String action = ns.getString("action");
 
         System.out.println("Hello World!" + action);
 
-        Map<String, ActionHandler> handlerMap = getHandlers();
 
         if (!handlerMap.containsKey(action)) {
             System.out.println("Cannot find action: " + action);
@@ -52,7 +58,7 @@ public class App {
 
         Client client = new Client(System.getenv("ADYEN_MANAGEMENT_API_KEY"), Environment.TEST);
         
-        handlerMap.get(action).execute(client);
+        handlerMap.get(action).execute(client, args);
 
         return 0;
     }
